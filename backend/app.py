@@ -1,5 +1,5 @@
 # ==============================
-# My GPT Backend (Vercel / HF-first) + Reranker + Router + Next-Q
+# RAG-GPT Backend - Local Development
 # ==============================
 from io import BytesIO
 from pathlib import Path
@@ -106,11 +106,8 @@ _nli_model = None
 _reranker = None
 _router_zs = None  # transformers zero-shot pipeline
 
-# Use /tmp on Vercel (read-only FS except /tmp). Falls back to ./data locally.
-DATA_DIR = Path(
-    os.getenv("DATA_DIR")
-    or ("/tmp/mygpt-data" if os.getenv("VERCEL") or os.getenv("VERCEL_ENV") else "data")
-)
+# Local data directory
+DATA_DIR = Path(os.getenv("DATA_DIR") or "data")
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 # KPI storage dir
@@ -120,7 +117,7 @@ KPI_DIR.mkdir(parents=True, exist_ok=True)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 bearer = HTTPBearer(auto_error=False)
 
-app = FastAPI(title="My GPT Backend")
+app = FastAPI(title="RAG-GPT Backend")
 
 app.add_middleware(
     CORSMiddleware,
@@ -419,6 +416,14 @@ def delete_chat(chat_id: str, user=Depends(auth_required)):
     key = f"{u}:{chat_id}"
     if key in chains:
         del chains[key]
+    return {"ok": True}
+
+@app.post("/api/reset")
+def reset_memory(req: ChatReq, user=Depends(auth_required)):
+    """Reset the conversation memory for a chat (frontend compatibility)."""
+    u = user["username"]
+    chat_id = req.chat_id or "default"
+    reset_chain(u, chat_id)
     return {"ok": True}
 
 # ------------------------ ROUTES: CHAT ------------------------

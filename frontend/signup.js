@@ -1,7 +1,5 @@
-const API_BASE =
-  location.hostname === "127.0.0.1" || location.hostname === "localhost"
-    ? "http://127.0.0.1:8000"
-    : "";
+// API base (local only)
+const API_BASE = "http://127.0.0.1:8000";
 
 const u = document.getElementById("u");
 const p = document.getElementById("p");

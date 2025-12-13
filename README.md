@@ -69,8 +69,8 @@ A comprehensive AI-powered chat application built with FastAPI and vanilla JavaS
 
 1. **Clone the repository**
 ```bash
-git clone <your-repo-url>
-cd <project-name>
+git clone https://github.com/Amarjeet06/python-postgres-setup.git
+cd python-postgres-setup
 ```
 
 2. **Create and activate virtual environment**

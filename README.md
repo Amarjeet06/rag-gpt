@@ -237,10 +237,6 @@ pip install torch transformers
 pip install statsmodels
 ```
 
-## 📝 License
-
-[Add your license here]
-
 ## 👨‍💻 Author
 
 **Amarjeet Singh Minhas**

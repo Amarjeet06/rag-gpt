@@ -1,6 +1,7 @@
 # 🤖 RAG-GPT: Advanced AI Assistant with RAG & Multimodal Capabilities
 
 [![CI](https://github.com/Amarjeet06/rag-gpt/actions/workflows/ci.yml/badge.svg)](https://github.com/Amarjeet06/rag-gpt/actions/workflows/ci.yml)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Amarjeet06/rag-gpt)
 
 
 A comprehensive AI-powered chat application built with FastAPI and vanilla JavaScript. Features Google Gemini integration, RAG (Retrieval-Augmented Generation), semantic search, document analysis, image generation, and business intelligence forecasting.
@@ -68,6 +69,17 @@ A comprehensive AI-powered chat application built with FastAPI and vanilla JavaS
 - **Markdown Rendering**: Marked.js
 - **Syntax Highlighting**: Highlight.js
 - **Responsive Design**: Mobile-friendly UI
+
+## ☁️ Live Deploy (Render)
+
+Click the **Deploy to Render** badge above to spin up a live instance in a
+couple of minutes: it provisions the FastAPI backend (Docker) plus a free
+managed Postgres database from `render.yaml`, and will prompt you for your
+own `GEMINI_API_KEY` at deploy time (never embedded in the repo). The
+pgvector persistence layer (`backend/vector_store.py`) auto-creates the
+`vector` extension and its table on first PDF upload, and falls back to the
+existing JSON-file storage if the database isn't reachable, so the app still
+works even before you've configured a database.
 
 ## 🚀 Quick Start
 

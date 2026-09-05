@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>RAG-GPT — Live Retrieval Demo</title>
+<style>
+  :root { --bg:#0b0d12; --panel:#12151c; --border2:#2a3040; --text:#e8ecf4; --muted:#8b93a7;
+          --accent:#5eead4; --accent2:#818cf8; --ok:#34d399; --warn:#f59e0b; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  header { border-bottom:1px solid var(--border2); padding:20px 24px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; }
+  header h1 { margin:0; font-size:20px; }
+  header p { margin:4px 0 0; color:var(--muted); font-size:13px; }
+  a.gh { color:var(--accent); text-decoration:none; border:1px solid var(--border2); padding:6px 14px; border-radius:999px; font-size:13px; }
+  a.gh:hover { background:#1a1f2b; }
+  main { max-width: 980px; margin:0 auto; padding:24px; }
+  .banner { border:1px solid #4338ca55; background:#1e1b4b55; color:#c7d2fe; border-radius:10px; padding:10px 14px; font-size:13px; margin-bottom:22px; line-height:1.5; }
+  .banner code { background:#312e8155; padding:1px 5px; border-radius:4px; }
+  section { background:var(--panel); border:1px solid var(--border2); border-radius:12px; padding:18px 20px; margin-bottom:20px; }
+  section h2 { margin:0 0 6px; font-size:15px; letter-spacing:0.04em; text-transform:uppercase; color:var(--accent2); }
+  section p.desc { color:var(--muted); font-size:12.5px; margin:0 0 14px; line-height:1.5; }
+  .doc { font-size:12.5px; line-height:1.7; color:#c7cbd4; max-height:220px; overflow-y:auto; border:1px solid var(--border2); border-radius:8px; padding:12px 14px; background:#0e1117; }
+  .doc p { margin:0 0 10px; }
+  .doc mark { background:#134e4a; color:#5eead4; border-radius:3px; padding:0 2px; }
+  .controls { display:flex; gap:10px; margin:16px 0; flex-wrap:wrap; }
+  input#q { flex:1; min-width:220px; font-family:inherit; font-size:13px; background:#0e1117; border:1px solid var(--border2); color:var(--text); border-radius:6px; padding:9px 12px; }
+  button { cursor:pointer; background:#1a1f2b; border:1px solid var(--border2); color:var(--text); border-radius:6px; padding:9px 16px; font-family:inherit; font-size:13px; }
+  button:hover { border-color:var(--accent); }
+  button.primary { background:#134e4a; border-color:#0d9488; }
+  .chip { display:inline-block; font-size:11.5px; background:#1a1f2b; border:1px solid var(--border2); border-radius:999px; padding:4px 10px; margin:3px 4px 0 0; cursor:pointer; color:var(--muted); }
+  .chip:hover { border-color:var(--accent2); color:var(--text); }
+  .result { border:1px solid var(--border2); border-radius:8px; padding:12px 14px; margin-top:10px; background:#0e1117; }
+  .result .score { float:right; font-size:11px; color:var(--ok); }
+  .result h4 { margin:0 0 6px; font-size:12.5px; color:var(--accent2); }
+  .result p { margin:0; font-size:12.5px; line-height:1.6; color:#c7cbd4; }
+  footer { text-align:center; color:var(--muted); font-size:12px; padding:30px 0; }
+  footer a { color:var(--accent); }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>RAG-GPT</h1>
+    <p>Retrieval-augmented assistant — Python, FastAPI, LangChain, PostgreSQL/pgvector</p>
+  </div>
+  <a class="gh" href="https://github.com/Amarjeet06/rag-gpt" target="_blank" rel="noreferrer">View source on GitHub ↗</a>
+</header>
+<main>
+  <div class="banner">
+    🟡 <strong>Retrieval-only demo.</strong> This page runs a real TF-IDF + cosine-similarity
+    search (implemented below, no backend, no API key) over the sample document underneath —
+    genuine ranked retrieval, not scripted results. It intentionally does <em>not</em> fabricate
+    an AI-generated answer: the deployed app (<code>backend/vector_store.py</code>) instead uses
+    real sentence-transformer embeddings + pgvector cosine search for retrieval and Google
+    Gemini for grounded generation over the retrieved passages. Click
+    <strong>Deploy to Render</strong> on the README for the full live pipeline with your own key.
+  </div>
+
+  <section>
+    <h2>Sample document (synthetic, loaded below)</h2>
+    <p class="desc">A short internal-style report — stand-in for an uploaded PDF.</p>
+    <div class="doc" id="docView"></div>
+  </section>
+
+  <section>
+    <h2>Ask a question</h2>
+    <p class="desc">Try: <span class="chip" data-q="How did revenue grow this quarter?">revenue growth</span><span class="chip" data-q="What are the biggest risks right now?">biggest risks</span><span class="chip" data-q="How is the engineering team doing?">engineering team</span><span class="chip" data-q="What is the hiring plan?">hiring plan</span></p>
+    <div class="controls">
+      <input id="q" placeholder="Ask something about the document above…" />
+      <button class="primary" id="btnAsk">Retrieve</button>
+    </div>
+    <div id="results"></div>
+  </section>
+</main>
+<footer>
+  Built by Amarjeet Singh Minhas · <a href="https://github.com/Amarjeet06/rag-gpt">source</a>
+</footer>
+
+<script>
+// Original synthetic sample document (not copied from any source) standing in for an uploaded PDF.
+const PARAGRAPHS = [
+  "Revenue grew 18% quarter-over-quarter, driven mainly by expansion within existing enterprise accounts rather than new-logo acquisition. The sales team closed fewer new deals than planned, but average contract value rose as customers upgraded to higher usage tiers.",
+  "The engineering team shipped the new notification service two weeks ahead of schedule and reduced average API latency by 30% after migrating the search index to a sharded architecture. On-call load dropped noticeably after the incident-response runbook was rewritten.",
+  "The biggest risk this quarter is customer concentration: the top five accounts now represent 42% of total revenue, up from 31% a year ago. Losing even one of these accounts would materially affect the growth trajectory, so the leadership team is prioritizing diversification.",
+  "Marketing launched a redesigned onboarding email sequence that lifted trial-to-paid conversion by 6 percentage points. Organic search traffic grew steadily, while paid acquisition costs increased due to rising competition for the same keywords.",
+  "Customer support resolved 94% of tickets within the first response SLA, an improvement over last quarter's 88%. The most common complaint category remained billing confusion, which is being addressed with a clearer invoice format shipping next month.",
+  "The hiring plan calls for eight new engineering hires and three new account executives over the next two quarters, concentrated in the platform and data infrastructure teams. Two senior engineering leads departed this quarter, which will slow near-term roadmap execution.",
+  "On the product roadmap, the team deprioritized the mobile app rewrite in favor of finishing the audit-log feature that several enterprise prospects have requested during sales calls. The mobile rewrite is now expected to resume next fiscal year.",
+  "Employee engagement survey scores held steady overall, though the survey flagged rising concerns about workload in the support organization following the recent departures. Leadership is reviewing staffing levels for that team as a priority for next quarter.",
+];
+
+function tokenize(text) {
+  return text.toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter(Boolean);
+}
+const STOPWORDS = new Set(["the","a","an","is","are","was","were","of","to","in","on","for","and","or","this","that","it","as","by","with","at","be","has","have","had","which","than","over","up","its","did","how","what"]);
+
+function buildTfidf(docs) {
+  const docTokens = docs.map(d => tokenize(d).filter(t => !STOPWORDS.has(t)));
+  const df = {};
+  docTokens.forEach(tokens => { new Set(tokens).forEach(t => { df[t] = (df[t]||0)+1; }); });
+  const N = docs.length;
+  const idf = {};
+  Object.keys(df).forEach(t => { idf[t] = Math.log((N+1)/(df[t]+1)) + 1; });
+  const vectors = docTokens.map(tokens => {
+    const tf = {};
+    tokens.forEach(t => { tf[t] = (tf[t]||0)+1; });
+    const vec = {};
+    Object.keys(tf).forEach(t => { vec[t] = (tf[t]/tokens.length) * (idf[t]||0); });
+    return vec;
+  });
+  return { idf, vectors };
+}
+function vectorize(text, idf) {
+  const tokens = tokenize(text).filter(t => !STOPWORDS.has(t));
+  const tf = {};
+  tokens.forEach(t => { tf[t] = (tf[t]||0)+1; });
+  const vec = {};
+  Object.keys(tf).forEach(t => { if (idf[t] !== undefined) vec[t] = (tf[t]/tokens.length) * idf[t]; });
+  return vec;
+}
+function cosine(a, b) {
+  let dot = 0, na = 0, nb = 0;
+  for (const k in a) { na += a[k]*a[k]; if (b[k]) dot += a[k]*b[k]; }
+  for (const k in b) nb += b[k]*b[k];
+  if (na === 0 || nb === 0) return 0;
+  return dot / (Math.sqrt(na) * Math.sqrt(nb));
+}
+
+const { idf, vectors } = buildTfidf(PARAGRAPHS);
+
+document.getElementById("docView").innerHTML = PARAGRAPHS.map(p => `<p>${p}</p>`).join("");
+
+function highlightTerms(text, queryTokens) {
+  let out = text;
+  queryTokens.forEach(t => {
+    if (t.length < 3) return;
+    const re = new RegExp(`\\b(${t})\\b`, "ig");
+    out = out.replace(re, "<mark>$1</mark>");
+  });
+  return out;
+}
+
+function runQuery(q) {
+  const qVec = vectorize(q, idf);
+  const scored = PARAGRAPHS.map((p, i) => ({ text: p, score: cosine(qVec, vectors[i]) }));
+  scored.sort((a, b) => b.score - a.score);
+  const top = scored.slice(0, 3).filter(s => s.score > 0);
+  const queryTokens = tokenize(q).filter(t => !STOPWORDS.has(t));
+  const el = document.getElementById("results");
+  if (top.length === 0) {
+    el.innerHTML = `<div class="result"><p>No passages scored above zero cosine similarity for that query — try one of the suggestions above.</p></div>`;
+    return;
+  }
+  el.innerHTML = top.map((s, i) => `<div class="result"><span class="score">cosine similarity: ${s.score.toFixed(3)}</span><h4>Retrieved passage #${i+1}</h4><p>${highlightTerms(s.text, queryTokens)}</p></div>`).join("");
+}
+
+document.getElementById("btnAsk").addEventListener("click", () => {
+  const q = document.getElementById("q").value.trim();
+  if (q) runQuery(q);
+});
+document.getElementById("q").addEventListener("keydown", (e) => { if (e.key === "Enter") document.getElementById("btnAsk").click(); });
+document.querySelectorAll(".chip").forEach(chip => {
+  chip.addEventListener("click", () => { document.getElementById("q").value = chip.dataset.q; runQuery(chip.dataset.q); });
+});
+</script>
+</body>
+</html>

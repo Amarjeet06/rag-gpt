@@ -1,5 +1,8 @@
 # 🤖 RAG-GPT: Advanced AI Assistant with RAG & Multimodal Capabilities
 
+[![CI](https://github.com/Amarjeet06/rag-gpt/actions/workflows/ci.yml/badge.svg)](https://github.com/Amarjeet06/rag-gpt/actions/workflows/ci.yml)
+
+
 A comprehensive AI-powered chat application built with FastAPI and vanilla JavaScript. Features Google Gemini integration, RAG (Retrieval-Augmented Generation), semantic search, document analysis, image generation, and business intelligence forecasting.
 
 ## ✨ Key Features

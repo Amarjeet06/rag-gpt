@@ -15,8 +15,9 @@
   a.gh { color:var(--accent); text-decoration:none; border:1px solid var(--border2); padding:6px 14px; border-radius:999px; font-size:13px; }
   a.gh:hover { background:#1a1f2b; }
   main { max-width: 980px; margin:0 auto; padding:24px; }
-  .banner { border:1px solid #4338ca55; background:#1e1b4b55; color:#c7d2fe; border-radius:10px; padding:10px 14px; font-size:13px; margin-bottom:22px; line-height:1.5; }
-  .banner code { background:#312e8155; padding:1px 5px; border-radius:4px; }
+  .banner { border:1px solid #0d948855; background:#05302966; color:#a7f3d0; border-radius:10px; padding:12px 16px; font-size:13.5px; margin-bottom:22px; line-height:1.5; }
+  .banner code { background:#0d948833; padding:1px 5px; border-radius:4px; }
+  .banner .caveat { display:block; margin-top:8px; padding-top:8px; border-top:1px solid #0d948833; font-size:11.5px; color:#8b93a7; line-height:1.5; }
   section { background:var(--panel); border:1px solid var(--border2); border-radius:12px; padding:18px 20px; margin-bottom:20px; }
   section h2 { margin:0 0 6px; font-size:15px; letter-spacing:0.04em; text-transform:uppercase; color:var(--accent2); }
   section p.desc { color:var(--muted); font-size:12.5px; margin:0 0 14px; line-height:1.5; }
@@ -48,13 +49,8 @@
 </header>
 <main>
   <div class="banner">
-    🟡 <strong>Retrieval-only demo.</strong> This page runs a real TF-IDF + cosine-similarity
-    search (implemented below, no backend, no API key) over the sample document underneath —
-    genuine ranked retrieval, not scripted results. It intentionally does <em>not</em> fabricate
-    an AI-generated answer: the deployed app (<code>backend/vector_store.py</code>) instead uses
-    real sentence-transformer embeddings + pgvector cosine search for retrieval and Google
-    Gemini for grounded generation over the retrieved passages. Click
-    <strong>Deploy to Render</strong> on the README for the full live pipeline with your own key.
+    🟢 <strong>Live in-browser retrieval.</strong> Real TF-IDF + cosine-similarity search running right now, no backend or API key required — try it below.
+    <span class="caveat">This demo shows retrieval only. The deployed app additionally uses sentence-transformer embeddings + pgvector for retrieval and Google Gemini for grounded generation over the retrieved passages — one-click <strong>Deploy to Render</strong> (see README) spins up the full pipeline with your own key.</span>
   </div>
 
   <section>

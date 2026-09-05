@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: raggpt
+          POSTGRES_PASSWORD: raggpt
+          POSTGRES_DB: raggpt
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U raggpt"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://raggpt:raggpt@localhost:5432/raggpt
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install minimal deps for vector_store tests
+        run: |
+          pip install sqlalchemy==2.0.36 psycopg2-binary==2.9.10 pgvector==0.3.6 pytest==8.3.4
+
+      - name: Run pgvector integration tests (real Postgres, real cosine search)
+        run: pytest tests/test_vector_store.py -v
+
+      - name: Byte-compile the full backend to catch syntax errors
+        run: |
+          pip install fastapi==0.116.1 python-dotenv==1.1.1 python-jose[cryptography]==3.3.0 \
+            passlib[bcrypt]==1.7.4 pydantic==2.11.7 starlette==0.47.2
+          python -m py_compile backend/app.py backend/vector_store.py

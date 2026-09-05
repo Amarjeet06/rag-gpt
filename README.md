@@ -51,6 +51,14 @@ A comprehensive AI-powered chat application built with FastAPI and vanilla JavaS
   - Statsmodels (forecasting)
 - **Data Processing**: Pandas, NumPy, PyPDF, PDFPlumber
 - **Auth**: python-jose, passlib, bcrypt
+- **Persistence**: JSON-file storage by default (zero-config for local dev);
+  when `DATABASE_URL` is set, uploaded PDF chunks are additionally persisted
+  to **PostgreSQL with the `pgvector` extension** (`backend/vector_store.py`)
+  and similarity search runs as a native pgvector cosine-distance query
+  (`embedding <=> query_vector`) with an IVFFlat index, instead of loading
+  every embedding into a Python list. Covered by real integration tests
+  against a live Postgres+pgvector instance in CI - see
+  `tests/test_vector_store.py` and `.github/workflows/ci.yml`.
 
 ### Frontend
 - **Pure JavaScript**: No frameworks, vanilla JS
@@ -69,8 +77,8 @@ A comprehensive AI-powered chat application built with FastAPI and vanilla JavaS
 
 1. **Clone the repository**
 ```bash
-git clone https://github.com/Amarjeet06/python-postgres-setup.git
-cd python-postgres-setup
+git clone https://github.com/Amarjeet06/rag-gpt.git
+cd rag-gpt
 ```
 
 2. **Create and activate virtual environment**
@@ -104,7 +112,21 @@ HF_TOKEN=your-huggingface-token  # if using Hugging Face
 CHAT_MEMORY_K=12  # Conversation memory window size
 EMB_MODEL=sentence-transformers/all-MiniLM-L6-v2
 RERANKER_MODEL=BAAI/bge-reranker-base
+
+# Optional - persistent PostgreSQL/pgvector storage instead of JSON-only
+DATABASE_URL=postgresql://raggpt:raggpt@localhost:5432/raggpt
 ```
+
+### Running with Docker (backend + Postgres/pgvector together)
+
+```bash
+docker compose up --build
+```
+
+This starts a `pgvector/pgvector:pg16` Postgres instance and the backend
+wired to it via `DATABASE_URL`, so uploaded PDFs are persisted with real
+vector search instead of the JSON-only fallback. Set `GEMINI_API_KEY` in
+your shell (or a `.env` file) first for the LLM features to work.
 
 5. **Start the backend server**
 ```bash
@@ -194,7 +216,8 @@ Visit `http://127.0.0.1:8000/docs` for interactive Swagger UI documentation.
 ```
 rag-gpt/
 ├── backend/
-│   └── app.py              # Main FastAPI application
+│   ├── app.py               # Main FastAPI application
+│   └── vector_store.py      # PostgreSQL/pgvector persistence + similarity search
 ├── frontend/
 │   ├── index.html          # Main chat interface
 │   ├── login.html          # Login page
@@ -203,10 +226,15 @@ rag-gpt/
 │   ├── login.js            # Login logic
 │   ├── signup.js           # Signup logic
 │   └── styles.css          # Styling
-├── data/                   # Local data storage
+├── tests/
+│   └── test_vector_store.py # Integration tests against live Postgres+pgvector
+├── data/                   # Local data storage (gitignored)
 │   ├── users.json          # User accounts
 │   ├── kpi_data/           # KPI datasets
 │   └── *.json              # User chat data
+├── .github/workflows/ci.yml # CI: spins up Postgres+pgvector, runs tests
+├── docker-compose.yml       # backend + Postgres/pgvector for local dev
+├── Dockerfile
 ├── requirements.txt        # Python dependencies
 ├── .env                    # Environment variables (create this)
 └── README.md              # This file

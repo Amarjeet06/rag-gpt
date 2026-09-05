@@ -40,6 +40,8 @@ except Exception:
 # PDF extraction
 from pypdf import PdfReader
 
+from . import vector_store
+
 # ====== Answerability (embeddings + NLI) ======
 import numpy as np
 from sentence_transformers import SentenceTransformer
@@ -814,6 +816,17 @@ async def pdf_read(
             "section_idx": i
         })
     store["chats"][chat_id]["doc_index"] = doc_index
+
+    # Additionally persist to PostgreSQL/pgvector when DATABASE_URL is configured.
+    # This runs alongside the JSON-file path above (not a replacement for it
+    # yet) so existing behavior is unaffected when no database is configured,
+    # while giving the app a real, tested, persistent vector store when one is.
+    if vector_store.is_enabled():
+        try:
+            vector_store.init_db()
+            vector_store.replace_chunks(u, chat_id, pdf.filename, chunks, chunk_embs.tolist())
+        except Exception as e:
+            print("WARN: pgvector persist failed (falling back to JSON-only):", repr(e))
     store["chats"][chat_id]["updated_at"] = int(time.time())
     save_user_chats(u, store)
 
